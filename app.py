@@ -83,12 +83,38 @@ if file1 and file2:
             lambda row: f"{row['loaded']} ({(row['loaded'] / row['total_bookings']) * 100:.2f}%)", axis=1
         )
 
+        # Calculate totals for all offices
+        total_summary = office_summary[['total_bookings', 'doc_received', 'posted', 'pre_release', 'loaded']].sum()
+        total_summary_df = pd.DataFrame({
+            'Office_x': ['Total'],
+            'total_bookings': [total_summary['total_bookings']],
+            'doc_received': [total_summary['doc_received']],
+            'posted': [total_summary['posted']],
+            'pre_release': [total_summary['pre_release']],
+            'loaded': [total_summary['loaded']],
+        })
+
+        total_summary_df['doc_received_formatted'] = f"{total_summary_df['doc_received'].values[0]} ({(total_summary_df['doc_received'].values[0] / total_summary_df['total_bookings'].values[0]) * 100:.2f}%)"
+        total_summary_df['posted_formatted'] = f"{total_summary_df['posted'].values[0]} ({(total_summary_df['posted'].values[0] / total_summary_df['total_bookings'].values[0]) * 100:.2f}%)"
+        total_summary_df['pre_release_formatted'] = f"{total_summary_df['pre_release'].values[0]} ({(total_summary_df['pre_release'].values[0] / total_summary_df['total_bookings'].values[0]) * 100:.2f}%)"
+        total_summary_df['loaded_formatted'] = f"{total_summary_df['loaded'].values[0]} ({(total_summary_df['loaded'].values[0] / total_summary_df['total_bookings'].values[0]) * 100:.2f}%)"
+
         # Select and rename columns for display
         office_summary_display = office_summary[[
             'Office_x', 'total_bookings', 'doc_received_formatted', 'posted_formatted', 'pre_release_formatted', 'loaded_formatted'
         ]]
         office_summary_display.columns = [
             'Office', 'Total Bookings', 'Doc Received', 'Posted', 'Pre-Release', 'Loaded'
+        ]
+
+        # Append total summary row directly to the existing office-wise summary
+        office_summary_display.loc['Total'] = [
+            'Total',
+            total_summary_df['total_bookings'].values[0],
+            total_summary_df['doc_received_formatted'].values[0],
+            total_summary_df['posted_formatted'].values[0],
+            total_summary_df['pre_release_formatted'].values[0],
+            total_summary_df['loaded_formatted'].values[0]
         ]
 
         # Transpose office-wise summary for better readability
