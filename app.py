@@ -1,15 +1,81 @@
-# dev branch
-
 import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
 
-st.title("Booking Data Report")
+# Set page configuration
+st.set_page_config(page_title="🌟 Booking Data Report", layout="wide")
+
+# Custom CSS for styling
+st.markdown("""
+<style>
+    .reportview-container .main .block-container {
+        padding: 2rem;
+    }
+    .css-18e3th9 {
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+    .header {
+        color: #007bff;
+        font-weight: bold;
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    .section-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        text-align: center;
+        font-size: 20px;
+    }
+    .button {
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        padding: 10px 20px;
+    }
+    .info {
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #e7f3fe;
+        border-left: 6px solid #2196F3;
+    }
+    .summary-table {
+        background-color: #34495e;
+        color: #ffffff;
+        border-radius: 10px;
+        margin-top: 20px;
+        overflow: hidden; /* To ensure border-radius is effective */
+    }
+    .summary-table th {
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 12px;
+        text-align: left;
+    }
+    .summary-table td {
+        color: #ffffff;
+        padding: 10px;
+        background-color: #34495e;
+    }
+    .summary-table tr:nth-child(even) td {
+        background-color: #2c3e50; /* Darker for even rows */
+    }
+    .summary-table tr:hover td {
+        background-color: #5d6d7e; /* Highlight on hover */
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("🌟 Booking Data Report")
 
 # Upload and read the Excel files
-file1 = st.file_uploader("Upload the first Excel file (Subject & Office)", type=["xlsx"])
-file2 = st.file_uploader("Upload the second Excel file (Latest Data)", type=["xlsx"])
+file1 = st.file_uploader("📂 Upload the first Excel file (Subject & Office)", type=["xlsx"])
+file2 = st.file_uploader("📂 Upload the second Excel file (Latest Data)", type=["xlsx"])
 
 if file1 and file2:
     df1 = pd.read_excel(file1, sheet_name="Sheet1")
@@ -45,12 +111,12 @@ if file1 and file2:
     df1['Booking Number'] = df1['Subject'].astype(str).apply(extract_booking)
 
     # Display counts of found and not found booking numbers
-    st.write(f"Total Booking Numbers Found: {booking_count['found']}")
-    st.write(f"Total Booking Numbers Not Found: {booking_count['not_found']}")
+    st.markdown("<div class='info'>Total Booking Numbers Found: <strong>{}</strong><br>Total Booking Numbers Not Found: <strong>{}</strong></div>".format(
+        booking_count['found'], booking_count['not_found']), unsafe_allow_html=True)
 
     # Ensure 'Booking' in df2 for merging
     if 'Booking' not in df2.columns:
-        st.error("'Booking' column not found in the second Excel file")
+        st.error("⚠️ 'Booking' column not found in the second Excel file")
     else:
         # Merge the data based on Booking Number
         merged_df = pd.merge(df1, df2, left_on='Booking Number', right_on='Booking', how='left')
@@ -122,22 +188,32 @@ if file1 and file2:
         # Transpose office-wise summary for better readability
         office_summary_display = office_summary_display.set_index('Office').T.reset_index()
 
-        # Display office-wise summary
-        st.write("Office-Wise Summary:")
-        st.dataframe(office_summary_display)
+        # Display office-wise summary with enhanced styling
+        st.markdown("<div class='section-title'>📊 Office-Wise Summary:</div>", unsafe_allow_html=True)
+        st.dataframe(office_summary_display.style.set_table_attributes("class='summary-table'").set_table_styles(
+            [{'selector': 'th', 'props': [('font-size', '16px'), ('text-align', 'center')]},
+             {'selector': 'td', 'props': [('font-size', '14px'), ('text-align', 'center')]}]
+        ))
 
-        # Sidebar for filtering
-        st.sidebar.header("Filter Options")
+        # Filtering section
+        st.markdown("<div class='section-title'>🔍 Filter Bookings:</div>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([3, 1, 1])  # Create columns for layout
 
-        # Filter by Office
-        offices = merged_df['Office_x'].unique()
-        selected_offices = st.sidebar.multiselect("Select Office", offices, default=offices)
+        with col1:
+            # Filter by Office with checkboxes
+            st.markdown("**Select Office(s):**")
+            offices = merged_df['Office_x'].unique().tolist()
+            selected_offices = st.multiselect("Options", offices, default=offices)
 
-        # Filter by Doc Received
-        selected_doc_received = st.sidebar.selectbox("Select Doc Received", options=["Both", "Yes", "No"], index=0)
+        with col2:
+            # Filter by Doc Received with radio buttons
+            st.markdown("**Select Doc Received:**")
+            selected_doc_received = st.radio("Options", options=["Both", "Yes", "No"], index=0, key="doc_received_filter")
 
-        # Filter by Posted
-        selected_posted = st.sidebar.selectbox("Select Posted", options=["Both", "Yes", "No"], index=0)
+        with col3:
+            # Filter by Posted with radio buttons
+            st.markdown("**Select Posted:**")
+            selected_posted = st.radio("Options", options=["Both", "Yes", "No"], index=0, key="posted_filter")
 
         # Apply filters
         filtered_df = merged_df[
@@ -155,34 +231,34 @@ if file1 and file2:
         filtered_df['ETD'] = pd.to_datetime(filtered_df['ETD']).dt.date
 
         # Display filtered booking numbers
-        st.write("Filtered Booking Numbers:")
-        st.dataframe(filtered_df[['Booking Number', 'Office_x', 'ETD', 'Doc Receive', 'Posted']])
+        st.markdown("<div class='section-title'>📅 Filtered Booking Numbers:</div>", unsafe_allow_html=True)
+        st.dataframe(filtered_df[['Booking Number', 'Office_x', 'ETD', 'Doc Receive', 'Posted']].style.set_table_attributes("class='summary-table'"))
 
         # Display counts of bookings by disposition and status
         disposition_counts = filtered_df.groupby('Office_x')['Disposition'].value_counts().unstack(fill_value=0)
         status_counts = filtered_df.groupby('Office_x')['Status'].value_counts().unstack(fill_value=0)
 
-        # Interactive table for Disposition counts
-        st.write("Bookings by Disposition (Office-wise):")
+        # Interactive table for Disposition and Status counts side by side
+        st.subheader("📊 Bookings by Disposition and Status (Office-wise):")
         for office in disposition_counts.index:
-            st.markdown(f"### {office}")
-            for disposition, count in disposition_counts.loc[office].items():
-                if count > 0:  # Only show counts greater than 0
-                    if st.button(f"{disposition}: {count}", key=f"disp_{office}_{disposition}"):
-                        booking_numbers = filtered_df[(filtered_df['Office_x'] == office) & (filtered_df['Disposition'] == disposition)]['Booking Number']
-                        st.write(f"Booking Numbers for {disposition} in {office}:")
-                        st.write(booking_numbers.to_list())
+            col1, col2 = st.columns(2)  # Create two columns for disposition and status
+            with col1:
+                st.markdown(f"### {office} - Disposition")
+                for disposition, count in disposition_counts.loc[office].items():
+                    if count > 0:  # Only show counts greater than 0
+                        if st.button(f"{disposition}: {count}", key=f"disp_{office}_{disposition}"):
+                            booking_numbers = filtered_df[(filtered_df['Office_x'] == office) & (filtered_df['Disposition'] == disposition)]['Booking Number']
+                            st.write(f"Booking Numbers for {disposition} in {office}:")
+                            st.write(booking_numbers.to_list())
 
-        # Interactive table for Status counts
-        st.write("Bookings by Status (Office-wise):")
-        for office in status_counts.index:
-            st.markdown(f"### {office}")
-            for status, count in status_counts.loc[office].items():
-                if count > 0:  # Only show counts greater than 0
-                    if st.button(f"{status}: {count}", key=f"stat_{office}_{status}"):
-                        booking_numbers = filtered_df[(filtered_df['Office_x'] == office) & (filtered_df['Status'] == status)]['Booking Number']
-                        st.write(f"Booking Numbers for {status} in {office}:")
-                        st.write(booking_numbers.to_list())
+            with col2:
+                st.markdown(f"### {office} - Status")
+                for status, count in status_counts.loc[office].items():
+                    if count > 0:  # Only show counts greater than 0
+                        if st.button(f"{status}: {count}", key=f"stat_{office}_{status}"):
+                            booking_numbers = filtered_df[(filtered_df['Office_x'] == office) & (filtered_df['Status'] == status)]['Booking Number']
+                            st.write(f"Booking Numbers for {status} in {office}:")
+                            st.write(booking_numbers.to_list())
 
         # Provide an option to download the filtered bookings data as an Excel file
         @st.cache_data
@@ -193,8 +269,9 @@ if file1 and file2:
             return output.getvalue()
 
         st.download_button(
-            label="Download Filtered Bookings as Excel",
+            label="⬇️ Download Filtered Bookings as Excel",
             data=convert_filtered_to_excel(filtered_df),
             file_name='filtered_bookings.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            key='download_button'
         )
